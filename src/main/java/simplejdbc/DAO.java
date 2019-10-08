@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
+import java.util.ArrayList;
 
 public class DAO {
 
@@ -64,8 +65,9 @@ public class DAO {
 			PreparedStatement stmt = connection.prepareStatement(sql)) {
 			// Définir la valeur du paramètre
 			stmt.setInt(1, customerId);
-
+                        
 			return stmt.executeUpdate();
+                 
 
 		} catch (SQLException ex) {
 			Logger.getLogger("DAO").log(Level.SEVERE, null, ex);
@@ -80,7 +82,25 @@ public class DAO {
 	 * @throws DAOException
 	 */
 	public int numberOfOrdersForCustomer(int customerId) throws DAOException {
-		throw new UnsupportedOperationException("Pas encore implémenté");
+                int result = 0;
+		String sql = "SELECT COUNT(CUSTOMER_ID) AS NBCOMMANDES FROM PURCHASE_ORDER WHERE CUSTOMER_ID = ?";
+		try (   Connection connection = myDataSource.getConnection();
+                        PreparedStatement stmt = connection.prepareStatement(sql);
+                ) {
+                    // Définir la valeur du paramètre
+                    stmt.setInt(1, customerId);  
+                    ResultSet rs = stmt.executeQuery();
+
+                    if (rs.next()) { // Pas la peine de faire while, il y a 1 seul enregistrement
+                            // On récupère le champ NBCOMMANDES de l'enregistrement courant
+                            result = rs.getInt("NBCOMMANDES");
+                    }
+		}  catch (SQLException ex) {
+			Logger.getLogger("DAO").log(Level.SEVERE, null, ex);
+			throw new DAOException(ex.getMessage());
+		}
+
+                return result;
 	}
 
 	/**
@@ -90,8 +110,28 @@ public class DAO {
 	 * @return l'enregistrement correspondant dans la table CUSTOMER, ou null si pas trouvé
 	 * @throws DAOException
 	 */
-	CustomerEntity findCustomer(int customerID) throws DAOException {
-		throw new UnsupportedOperationException("Pas encore implémenté");
+		CustomerEntity findCustomer(int customerID) throws DAOException {
+                CustomerEntity result = null;
+
+		String sql;
+                sql = "SELECT * FROM CUSTOMER WHERE CUSTOMER_ID = ?";
+		try (Connection connection = myDataSource.getConnection(); // On crée un statement pour exécuter une requête
+			PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+			stmt.setInt(1, customerID);
+			try (ResultSet rs = stmt.executeQuery()) {
+				if (rs.next()) { // On a trouvé
+					String name = rs.getString("NAME");
+					// On crée l'objet "entity"
+					result = new CustomerEntity(customerID, name, "");
+				} // else on n'a pas trouvé, on renverra null
+			}
+		}  catch (SQLException ex) {
+			Logger.getLogger("DAO").log(Level.SEVERE, null, ex);
+			throw new DAOException(ex.getMessage());
+		}
+
+                return result;
 	}
 
 	/**
@@ -102,7 +142,29 @@ public class DAO {
 	 * @throws DAOException
 	 */
 	List<CustomerEntity> customersInState(String state) throws DAOException {
-		throw new UnsupportedOperationException("Pas encore implémenté");
+                List<CustomerEntity> result = new ArrayList();
+
+		String sql;
+                sql = "SELECT CUSTOMER_ID, NAME, ADDRESSLINE1 FROM CUSTOMER WHERE STATE = ?";
+		try (Connection connection = myDataSource.getConnection();
+			PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+                        stmt.setString(1, state); 
+			try (ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) { 
+                                    int id  = rs.getInt("CUSTOMER_ID");
+                                    String name = rs.getString("NAME");
+                                    String address = rs.getString("ADDRESSLINE1");
+                                    String currentCustomer = name;                               
+                                    result.add(new CustomerEntity(id, name, address));                                  
+				}
+			}
+		}  catch (SQLException ex) {
+			Logger.getLogger("DAO").log(Level.SEVERE, null, ex);
+			throw new DAOException(ex.getMessage());
+		}
+
+                return result;
 	}
 
 }
