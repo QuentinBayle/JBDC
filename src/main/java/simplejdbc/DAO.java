@@ -155,7 +155,6 @@ public class DAO {
                                     int id  = rs.getInt("CUSTOMER_ID");
                                     String name = rs.getString("NAME");
                                     String address = rs.getString("ADDRESSLINE1");
-                                    String currentCustomer = name;                               
                                     result.add(new CustomerEntity(id, name, address));                                  
 				}
 			}
